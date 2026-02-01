@@ -1,39 +1,94 @@
-services:
-  # postgres:
-  #   image: postgres:16.11-alpine3.23
-  #   restart: on-failure
-  #   env_file:
-  #     - .env
-  #   container_name: dev_postgres
-  #   networks:
-  #     devnet:
-  #   ports:
-  #     - "5432:5432"
-  #   volumes:
-  #     - ../.docker/postgres/data:/var/lib/postgresql/data
-  #     - ../.docker/postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+version: "3.9"
 
+services:
+  # Tracing
+  jaeger:
+    image: jaegertracing/all-in-one:1.53
+    container_name: dev_jaeger
+    env_file:
+      - .env.dev
+    ports:
+      - "16686:16686" # UI
+      - "4317:4317"   # OTLP gRPC
+    networks:
+      - devnet
+
+  # Metrics
+  prometheus:
+    image: prom/prometheus:v3.5.1
+    container_name: dev_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./.docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - devnet
+
+  grafana:
+    image: grafana/grafana:12.3
+    container_name: dev_grafana
+    env_file:
+      - .env.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./.docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./.docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - devnet
+    depends_on:
+      - prometheus
+      - loki
+
+  # Logs
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: dev_loki
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+    networks:
+      - devnet
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: dev_promtail
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./.docker/promtail-config.yml:/etc/promtail/config.yml:ro
+      - ./.docker/logs:/var/log/app
+    networks:
+      - devnet
+    depends_on:
+      - loki
+
+  # Go Application 
   golang:
+    container_name: telemetry_sample_dev_golang
     tty: true
-    container_name: dev_golang
     restart: on-failure
     working_dir: /workspaces/app
-    env_file: .env
     build:
-      context: "."
+      context: .
+      dockerfile: Dockerfile.dev
       target: devcontainer
-      dockerfile: "Dockerfile.dev"
-    # depends_on:
-    #   - postgres
-    networks:
-      devnet:
-    # ports:
-    #   - "3000:3000"
+    env_file:
+      - .env.dev
     volumes:
       - ./:/workspaces/app:rw
       - ../.docker/go/bin:/go/bin:rw
       - ../.docker/go/pkg:/go/pkg:rw
+    ports:
+      - "8080:8080"
+    networks:
+      - devnet
+    depends_on:
+      - jaeger
+      - prometheus
+      - grafana
+      - loki
 
+# Networks
 networks:
   devnet:
     name: devnet

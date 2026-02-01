@@ -43,8 +43,5 @@ RUN chown -R $USERNAME:$USERNAME .
 # Set default user
 USER $USERNAME
 
-# Expose port
-EXPOSE 3000
-
 # Run fish by default
 CMD ["fish"]
