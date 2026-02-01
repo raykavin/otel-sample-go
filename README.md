@@ -1,6 +1,6 @@
-# Go Telemetry Sample
+# Go Telemetry And Observability Sample
 
-A small Go web service that demonstrates end-to-end observability with OpenTelemetry (traces + metrics) and a log pipeline to Grafana Loki. The app exposes a few endpoints that simulate latency, CPU, and memory pressure, and publishes Prometheus metrics while exporting traces via OTLP.
+A small Go web service that demonstrates end-to-end observability and telemetry collection with OpenTelemetry (traces + metrics) and a log pipeline to Grafana Loki. The app exposes a few endpoints that simulate latency, CPU, and memory pressure, and publishes Prometheus metrics while exporting traces via OTLP.
 
 ## What this repo includes
 
