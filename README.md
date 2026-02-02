@@ -70,6 +70,7 @@ Environment variables used by the app:
 - `OTEL_EXPORTER_OTLP_ENDPOINT` (default: `localhost:4317`)
 - `OTEL_EXPORTER_OTLP_INSECURE` (default: `true`)
 - `LOGGING_PATH` (default: `logs`)
+- `SIMULATE_STATUS_CODES` (default: `true`)
 
 When using Docker Compose, `.env.dev` sets `LOGGING_PATH=.docker/logs` so Promtail can read the log file.
 
