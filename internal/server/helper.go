@@ -5,6 +5,9 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel/trace"
@@ -49,4 +52,43 @@ func getRandomDur() time.Duration {
 func getRandStatusCode() int {
 	idx := rd.Intn(len(statusCodes))
 	return statusCodes[idx]
+}
+
+func statusFromRequest(r *http.Request) (int, bool) {
+	if code, ok := parseStatus(r.URL.Query().Get("status")); ok {
+		return code, true
+	}
+
+	if code, ok := parseStatus(r.Header.Get("X-Debug-Status")); ok {
+		return code, true
+	}
+
+	if isTruthy(os.Getenv("SIMULATE_STATUS_CODES")) {
+		return getRandStatusCode(), true
+	}
+
+	return 0, false
+}
+
+func parseStatus(value string) (int, bool) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return 0, false
+	}
+
+	code, err := strconv.Atoi(value)
+	if err != nil || code < 100 || code > 599 {
+		return 0, false
+	}
+
+	return code, true
+}
+
+func isTruthy(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "1", "true", "yes", "y", "on":
+		return true
+	default:
+		return false
+	}
 }
